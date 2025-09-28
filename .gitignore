@@ -1,0 +1,12 @@
+# Virtual environments
+myenv/
+venv/
+env/
+
+# Jupyter temp files
+.ipynb_checkpoints/
+*.pyc
+__pycache__/
+
+# Large datasets
+data/PlantVillage/
