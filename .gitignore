@@ -1,7 +1,10 @@
 # Virtual environments
+
 myenv/
 venv/
 env/
+api_env/
+
 
 # Jupyter temp files
 .ipynb_checkpoints/
