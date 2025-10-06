@@ -12,7 +12,8 @@ CLASS_NAMES = ['Early Blight', 'Late Blight', 'Healthy']
 
 def read_file_as_image(data) -> np.ndarray:
     img = Image.open(BytesIO(data)).convert('RGB').resize((256,256))
-    image = np.array(img).astype(np.float32) / 255.0
+    image = np.array(img).astype(np.float32)
+    # do NOT normalize here if the SavedModel expects 0-255 input and includes a Rescaling layer
     return image.tolist()
 
 
