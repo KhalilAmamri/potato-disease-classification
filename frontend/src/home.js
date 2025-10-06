@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { makeStyles, withStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
@@ -26,7 +27,7 @@ const ColorButton = withStyles((theme) => ({
     },
   },
 }))(Button);
-const axios = require("axios").default;
+// axios imported as ES module above
 
 const useStyles = makeStyles((theme) => ({
   grow: {

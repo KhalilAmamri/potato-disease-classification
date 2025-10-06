@@ -5,6 +5,7 @@ from io import BytesIO
 from PIL import Image
 import tensorflow as tf
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -179,7 +180,13 @@ async def predict(
         'confidence': float(confidence)
     }
 
-    
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8001)
