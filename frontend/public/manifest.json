@@ -1,0 +1,15 @@
+{
+  "short_name": "potato",
+  "name": "Potato Disease Classifier",
+  "icons": [
+    {
+      "src": "cblogo.PNG",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#be6a77",
+  "background_color": "#ffffff"
+}
