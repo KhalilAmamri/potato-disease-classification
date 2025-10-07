@@ -29,7 +29,7 @@ def model_needs_raw_input(model):
 # Load model: prefer SavedModel directory (TF Serving style) then fall back to H5
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 SAVEDMODEL_DIR = os.path.join(BASE_DIR, 'models', 'potatoes_model', '1')
-H5_PATH = os.path.join(BASE_DIR, 'saved_models', 'model_final.h5')
+H5_PATH = os.path.join(BASE_DIR, 'saved_models', 'potato_disease_model.h5')
 
 MODEL = None
 load_error = None
