@@ -158,17 +158,37 @@ class _HomePageState extends State<HomePage> {
         ...extraHeaders,
       };
 
-      final resp = await http
-          .post(
-            Uri.parse(hfEndpoint),
-            headers: headers,
-            body: body,
-          )
+      // Try primary endpoint and a couple of fallbacks if we get 404.
+      Uri primary = Uri.parse(hfEndpoint);
+      http.Response resp = await http
+          .post(primary, headers: headers, body: body)
           .timeout(const Duration(seconds: 30));
 
+      if (resp.statusCode == 404) {
+        // try /run/predict (some Gradio Spaces expose this)
+        final alt1 = hfEndpoint.replaceFirst('/api/predict', '/run/predict');
+        if (alt1 != hfEndpoint) {
+          resp = await http
+              .post(Uri.parse(alt1), headers: headers, body: body)
+              .timeout(const Duration(seconds: 30));
+        }
+      }
+
+      if (resp.statusCode == 404) {
+        // try trailing slash variant
+        final alt2 = hfEndpoint.endsWith('/') ? hfEndpoint : hfEndpoint + '/';
+        if (alt2 != hfEndpoint) {
+          resp = await http
+              .post(Uri.parse(alt2), headers: headers, body: body)
+              .timeout(const Duration(seconds: 30));
+        }
+      }
+
       if (resp.statusCode != 200) {
+        final bodyText = resp.body.trim();
         setState(() {
-          _error = 'Server returned status ${resp.statusCode}';
+          _error =
+              'Server returned status ${resp.statusCode}: ${bodyText.isEmpty ? '<empty body>' : bodyText}';
           _loading = false;
         });
         return;
@@ -268,6 +288,11 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             preview,
+            const SizedBox(height: 8),
+            // Show endpoint being used (debug only)
+            if (kDebugMode)
+              SelectableText('Endpoint: $hfEndpoint',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54)),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
