@@ -18,3 +18,10 @@ dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0

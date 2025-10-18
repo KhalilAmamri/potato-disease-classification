@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -8,11 +7,21 @@ import 'package:image/image.dart' as img_pkg;
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter/foundation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Load environment variables from mobile/flutter_app/.env
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // Ignore missing .env for web or test environments; we'll use defaults.
+    // Print for developer visibility in debug builds.
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('dotenv.load() failed: $e');
+    }
+  }
   runApp(const PotatoApp());
 }
 
@@ -47,15 +56,30 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ImagePicker _picker = ImagePicker();
   XFile? _imageFile;
+  Uint8List? _imageBytes;
   bool _loading = false;
   String? _error;
   List<Prediction>? _predictions;
 
   // Read endpoint and token from env (set .env file in mobile/flutter_app/)
-  final String hfEndpoint = (dotenv.env['HF_RUNTIME'] ??
-          'https://khalil-amamri-potato-space.hf.space') +
-      '/api/predict';
-  final String? hfToken = dotenv.env['HF_TOKEN'];
+  String get hfEndpoint {
+    try {
+      final runtime = dotenv.env['HF_RUNTIME'];
+      if (runtime != null && runtime.isNotEmpty) {
+        return '$runtime/api/predict';
+      }
+    } catch (_) {}
+    return 'https://khalil-amamri-potato-space.hf.space/api/predict';
+  }
+
+  String? get hfToken {
+    try {
+      return dotenv.env['HF_TOKEN'];
+    } catch (_) {
+      return null;
+    }
+  }
+
   Map<String, String> get extraHeaders {
     final token = hfToken;
     if (token != null && token.isNotEmpty) {
@@ -67,8 +91,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> _pickFromCamera() async {
     final XFile? file =
         await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
     setState(() {
       _imageFile = file;
+      _imageBytes = bytes;
       _predictions = null;
       _error = null;
     });
@@ -77,23 +104,27 @@ class _HomePageState extends State<HomePage> {
   Future<void> _pickFromGallery() async {
     final XFile? file =
         await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
     setState(() {
       _imageFile = file;
+      _imageBytes = bytes;
       _predictions = null;
       _error = null;
     });
   }
 
   // Resize the image to max dim (keeps aspect ratio)
-  Future<Uint8List> _resizeImage(File file, {int maxDim = 800}) async {
-    final bytes = await file.readAsBytes();
+  Future<Uint8List> _resizeImage(Uint8List bytes, {int maxDim = 800}) async {
     final img_pkg.Image? image = img_pkg.decodeImage(bytes);
     if (image == null) return bytes;
     final int w = image.width;
     final int h = image.height;
     if (w <= maxDim && h <= maxDim) return bytes;
-    final img_pkg.Image resized =
-        img_pkg.copyResize(image, width: (w > h ? maxDim : (w * maxDim ~/ h)));
+    final img_pkg.Image resized = img_pkg.copyResize(
+      image,
+      width: (w > h ? maxDim : (w * maxDim ~/ h)),
+    );
     return Uint8List.fromList(img_pkg.encodeJpg(resized, quality: 85));
   }
 
@@ -111,8 +142,10 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final File file = File(_imageFile!.path);
-      final Uint8List resizedBytes = await _resizeImage(file, maxDim: 600);
+      final Uint8List originalBytes =
+          _imageBytes ?? await _imageFile!.readAsBytes();
+      final Uint8List resizedBytes =
+          await _resizeImage(originalBytes, maxDim: 600);
       final String base64Data = base64Encode(resizedBytes);
       final String dataUri = 'data:image/jpeg;base64,$base64Data';
 
@@ -216,7 +249,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final preview = _imageFile == null
+    final preview = _imageFile == null || _imageBytes == null
         ? Container(
             height: 240,
             color: Colors.grey[200],
@@ -224,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('No image selected',
                     style: TextStyle(color: Colors.black54))),
           )
-        : Image.file(File(_imageFile!.path), height: 240, fit: BoxFit.cover);
+        : Image.memory(_imageBytes!, height: 240, fit: BoxFit.cover);
 
     return Scaffold(
       appBar: AppBar(
