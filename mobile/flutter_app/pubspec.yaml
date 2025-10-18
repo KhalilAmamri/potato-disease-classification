@@ -1,0 +1,20 @@
+name: potato_flutter_app
+description: A minimal Flutter app to capture potato leaf photos and call your HF Space model.
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=2.18.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  image_picker: ^0.8.7
+  http: ^1.1.0
+  image: ^4.0.17
+  flutter_spinkit: ^5.1.0
+  flutter_dotenv: ^5.0.2
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,10 @@
+.env
+/build
+/.dart_tool
+/.idea
+*.iml
+*.apk
+*.aab
+*.keystore
+**/GeneratedPluginRegistrant.java
+**/GeneratedPluginRegistrant.kt
