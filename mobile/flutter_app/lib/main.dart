@@ -153,43 +153,28 @@ class _HomePageState extends State<HomePage> {
           _imageBytes ?? await _imageFile!.readAsBytes();
       final Uint8List resizedBytes =
           await _resizeImage(originalBytes, maxDim: 600);
-      final String base64Data = base64Encode(resizedBytes);
-      final String dataUri = 'data:image/jpeg;base64,$base64Data';
 
-      final body = jsonEncode({
-        'data': [dataUri]
-      });
+      // Create multipart request to upload the file
+      final Uri endpoint = Uri.parse(hfEndpoint);
+      final request = http.MultipartRequest('POST', endpoint);
 
-      final headers = {
-        'Content-Type': 'application/json',
-        ...extraHeaders,
-      };
+      // Add the image file as multipart data
+      request.files.add(http.MultipartFile.fromBytes(
+        'file', // Field name expected by FastAPI
+        resizedBytes,
+        filename: 'image.jpg',
+      ));
 
-      // Try primary endpoint and a couple of fallbacks if we get 404.
-      Uri primary = Uri.parse(hfEndpoint);
-      http.Response resp = await http
-          .post(primary, headers: headers, body: body)
-          .timeout(const Duration(seconds: 30));
-
-      if (resp.statusCode == 404) {
-        // try /run/predict (some Gradio Spaces expose this)
-        final alt1 = hfEndpoint.replaceFirst('/api/predict', '/run/predict');
-        if (alt1 != hfEndpoint) {
-          resp = await http
-              .post(Uri.parse(alt1), headers: headers, body: body)
-              .timeout(const Duration(seconds: 30));
-        }
+      // Add authorization header if token exists
+      final token = hfToken;
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
       }
 
-      if (resp.statusCode == 404) {
-        // try trailing slash variant
-        final alt2 = hfEndpoint.endsWith('/') ? hfEndpoint : hfEndpoint + '/';
-        if (alt2 != hfEndpoint) {
-          resp = await http
-              .post(Uri.parse(alt2), headers: headers, body: body)
-              .timeout(const Duration(seconds: 30));
-        }
-      }
+      // Send request and get response
+      final streamedResponse =
+          await request.send().timeout(const Duration(seconds: 30));
+      final resp = await http.Response.fromStream(streamedResponse);
 
       if (resp.statusCode != 200) {
         final bodyText = resp.body.trim();
@@ -205,30 +190,36 @@ class _HomePageState extends State<HomePage> {
           jsonDecode(resp.body) as Map<String, dynamic>;
 
       List<Prediction> preds = [];
+
+      // Parse response from Gradio (format: {label: {Class1: 0.9, Class2: 0.1, ...}})
       if (jsonResp.containsKey('label')) {
-        final label = jsonResp['label'].toString();
-        double conf = 0.0;
-        if (jsonResp['confidences'] is List) {
-          final top = (jsonResp['confidences'] as List).firstWhere(
-            (e) => e is Map && e['label'] == label,
-            orElse: () => null,
-          );
-          if (top != null && top is Map && top['confidence'] != null) {
-            conf = (top['confidence'] as num).toDouble();
-          }
+        final labelData = jsonResp['label'];
+        if (labelData is Map) {
+          // Convert map to list of predictions sorted by confidence
+          labelData.forEach((key, value) {
+            preds.add(Prediction(
+              label: key.toString(),
+              confidence: (value is num) ? value.toDouble() : 0.0,
+            ));
+          });
+          preds.sort((a, b) => b.confidence.compareTo(a.confidence));
+        } else if (labelData is String) {
+          preds.add(Prediction(label: labelData, confidence: 1.0));
         }
-        preds.add(Prediction(label: label, confidence: conf));
       } else if (jsonResp.containsKey('data')) {
         final data = jsonResp['data'];
         if (data is List && data.isNotEmpty) {
           final first = data[0];
           if (first is String) {
             preds.add(Prediction(label: first, confidence: 0.0));
-          } else if (first is Map && first.containsKey('label')) {
-            preds.add(Prediction(
-              label: first['label'].toString(),
-              confidence: (first['confidence'] ?? 0.0).toDouble(),
-            ));
+          } else if (first is Map) {
+            first.forEach((key, value) {
+              preds.add(Prediction(
+                label: key.toString(),
+                confidence: (value is num) ? value.toDouble() : 0.0,
+              ));
+            });
+            preds.sort((a, b) => b.confidence.compareTo(a.confidence));
           }
         }
       } else {
