@@ -64,8 +64,13 @@ class _HomePageState extends State<HomePage> {
   // Read endpoint and token from env (set .env file in mobile/flutter_app/)
   String get hfEndpoint {
     try {
-      final runtime = dotenv.env['HF_RUNTIME'];
-      if (runtime != null && runtime.isNotEmpty) {
+      String? runtime = dotenv.env['HF_RUNTIME'];
+      if (runtime != null && runtime.trim().isNotEmpty) {
+        runtime = runtime.trim();
+        // Remove trailing slash
+        if (runtime.endsWith('/')) runtime = runtime.substring(0, runtime.length - 1);
+        // Remove trailing /predict if present
+        if (runtime.endsWith('/predict')) runtime = runtime.substring(0, runtime.length - '/predict'.length);
         return '$runtime/api/predict';
       }
     } catch (_) {}
