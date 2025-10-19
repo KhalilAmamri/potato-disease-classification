@@ -22,9 +22,8 @@ Minimal end-to-end project: a Flutter mobile app that predicts potato leaf disea
 
 ---
 
-## 📸 Screenshots (placeholders)
+## 📸 Screenshots
 
-Add your screenshots under `docs/screenshots/` then update these links.
 
 | Home                               | Prediction                               | Gallery                                  |
 | ---------------------------------- | ---------------------------------------- | ---------------------------------------- |
