@@ -36,6 +36,7 @@ class PotatoApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
       home: const HomePage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -278,49 +279,84 @@ class _HomePageState extends State<HomePage> {
         : Image.memory(_imageBytes!, height: 240, fit: BoxFit.cover);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Potato Leaf Detector'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            preview,
-            const SizedBox(height: 8),
-            // Show endpoint being used (debug only)
-            if (kDebugMode)
-              SelectableText('Endpoint: $hfEndpoint',
-                  style: const TextStyle(fontSize: 12, color: Colors.black54)),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background image
+          Image.asset(
+            'assets/images/bg.png', // Put your file here
+            fit: BoxFit.cover,
+            errorBuilder: (context, _, __) => Container(color: Colors.black12),
+          ),
+          // Dim overlay for readability
+          Container(color: Colors.black.withOpacity(0.45)),
+          // Content
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, kToolbarHeight + 24, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Camera'),
-                  onPressed: _pickFromCamera,
+                // Preview card with a subtle background
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: preview,
                 ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.photo),
-                  label: const Text('Gallery'),
-                  onPressed: _pickFromGallery,
+                const SizedBox(height: 10),
+                if (kDebugMode)
+                  SelectableText(
+                    'Endpoint: $hfEndpoint',
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Camera'),
+                      onPressed: _pickFromCamera,
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.photo),
+                      label: const Text('Gallery'),
+                      onPressed: _pickFromGallery,
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.send),
+                      label: const Text('Send'),
+                      onPressed: _loading ? null : _sendToModel,
+                    ),
+                  ],
                 ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.send),
-                  label: const Text('Send'),
-                  onPressed: _loading ? null : _sendToModel,
+                const SizedBox(height: 18),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: _resultCard(),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Tips: Ensure the leaf fills most of the frame; good light; take multiple photos for better results.',
+                  style: TextStyle(color: Colors.white70),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            _resultCard(),
-            const SizedBox(height: 24),
-            const Text(
-              'Tips: Ensure the leaf fills most of the frame; good light; take multiple photos for better results.',
-              style: TextStyle(color: Colors.black54),
-            )
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
