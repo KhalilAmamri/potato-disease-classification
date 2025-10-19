@@ -68,9 +68,11 @@ class _HomePageState extends State<HomePage> {
       if (runtime != null && runtime.trim().isNotEmpty) {
         runtime = runtime.trim();
         // Remove trailing slash
-        if (runtime.endsWith('/')) runtime = runtime.substring(0, runtime.length - 1);
+        if (runtime.endsWith('/'))
+          runtime = runtime.substring(0, runtime.length - 1);
         // Remove trailing /predict if present
-        if (runtime.endsWith('/predict')) runtime = runtime.substring(0, runtime.length - '/predict'.length);
+        if (runtime.endsWith('/predict'))
+          runtime = runtime.substring(0, runtime.length - '/predict'.length);
         return '$runtime/api/predict';
       }
     } catch (_) {}
